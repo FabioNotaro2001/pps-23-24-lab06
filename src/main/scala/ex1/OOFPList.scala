@@ -45,13 +45,20 @@ enum List[A]:
     case h :: t => t.foldLeft(h)(op)
 
   // Exercise: implement the following methods
-  def zipWithValue[B](value: B): List[(A, B)] = ???
-  def length(): Int = ???
-  def zipWithIndex: List[(A, Int)] = ???
-  def partition(predicate: A => Boolean): (List[A], List[A]) = ???
-  def span(predicate: A => Boolean): (List[A], List[A]) = ???
-  def takeRight(n: Int): List[A] = ???
-  def collect(predicate: PartialFunction[A, A]): List[A] = ???
+  def zipWithValue[B](value: B): List[(A, B)] = this.foldRight(Nil())((currentElem, remainingList) => (currentElem, value) :: remainingList)
+  def length(): Int = this.foldLeft(0)((remainingList, currentElem) => remainingList + 1)
+  def zipWithIndex: List[(A, Int)] = this.foldRight(Nil())((currentElem, remainingList) => (currentElem, this.length() - remainingList.length() - 1) :: remainingList)
+  def partition(predicate: A => Boolean): (List[A], List[A]) = this.foldRight((Nil(), Nil())):
+    case (currentElem, (remainingList1, remainingList2)) if predicate(currentElem) => (currentElem :: remainingList1, remainingList2)
+    case (currentElem, (remainingList1, remainingList2)) => (remainingList1, currentElem :: remainingList2)
+  def span(predicate: A => Boolean): (List[A], List[A]) =
+    this.foldRight((Nil(), Nil())):
+      case (currentElem, (remainingList1, remainingList2)) if predicate(currentElem) => (currentElem :: remainingList1, remainingList2)
+      case (currentElem, (remainingList1, remainingList2)) => (Nil(), currentElem :: remainingList1 append remainingList2)
+  def takeRight(n: Int): List[A] = this.zipWithIndex.filter((a, b) => this.length() - b <= n).map((a, b) => a)
+  def collect(predicate: PartialFunction[A, A]): List[A] = foldRight(Nil()):
+    case (currentElem, remainingList) if predicate.isDefinedAt(currentElem) => predicate(currentElem) :: remainingList
+    case (_, remainingList) => remainingList
 // Factories
 object List:
 
@@ -68,6 +75,7 @@ object Test extends App:
   import List.*
   val reference = List(1, 2, 3, 4)
   println(reference.zipWithValue(10)) // List((1, 10), (2, 10), (3, 10), (4, 10))
+  println(reference.length())
   println(reference.zipWithIndex) // List((1, 0), (2, 1), (3, 2), (4, 3))
   println(reference.partition(_ % 2 == 0)) // (List(2, 4), List(1, 3))
   println(reference.span(_ % 2 != 0)) // (List(1), List(2, 3, 4))
